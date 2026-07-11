@@ -1,0 +1,13 @@
+import { AuthUser } from './index';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser;
+      cookies: Record<string, string>;
+      requestId?: string;
+    }
+  }
+}
+
+export {};

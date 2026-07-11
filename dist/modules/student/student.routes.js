@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const student_controller_1 = require("./student.controller");
+const auth_1 = require("../../middleware/auth");
+const validation_1 = require("../../middleware/validation");
+const api_error_1 = require("../../utils/api-error");
+const validator_1 = require("../../utils/validator");
+const student_types_1 = require("./student.types");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.get('/', (0, api_error_1.asyncHandler)(student_controller_1.studentController.list.bind(student_controller_1.studentController)));
+router.get('/search', (0, api_error_1.asyncHandler)(student_controller_1.studentController.search.bind(student_controller_1.studentController)));
+router.post('/', (0, validation_1.validate)({ body: student_types_1.createStudentSchema }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.create.bind(student_controller_1.studentController)));
+router.post('/bulk', (0, validation_1.validate)({ body: student_types_1.bulkImportSchema }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.bulk.bind(student_controller_1.studentController)));
+router.get('/:id', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.get.bind(student_controller_1.studentController)));
+router.put('/:id', (0, validation_1.validate)({ params: validator_1.idParam, body: student_types_1.updateStudentSchema }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.update.bind(student_controller_1.studentController)));
+router.delete('/:id', (0, validation_1.validate)({ params: validator_1.idParam, body: student_types_1.withdrawSchema }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.withdraw.bind(student_controller_1.studentController)));
+router.delete('/:id/permanent', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(student_controller_1.studentController.permanentDelete.bind(student_controller_1.studentController)));
+exports.default = router;
+//# sourceMappingURL=student.routes.js.map

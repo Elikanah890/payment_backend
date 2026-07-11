@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const admin_controller_1 = require("./admin.controller");
+const auth_1 = require("../../middleware/auth");
+const rbac_1 = require("../../middleware/rbac");
+const validation_1 = require("../../middleware/validation");
+const api_error_1 = require("../../utils/api-error");
+const validator_1 = require("../../utils/validator");
+const admin_types_1 = require("./admin.types");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.get('/', (0, api_error_1.asyncHandler)(admin_controller_1.adminController.list.bind(admin_controller_1.adminController)));
+router.get('/:id', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.get.bind(admin_controller_1.adminController)));
+router.get('/:id/activity', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.activity.bind(admin_controller_1.adminController)));
+router.post('/', rbac_1.superAdminOnly, (0, validation_1.validate)({ body: admin_types_1.createAdminSchema }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.create.bind(admin_controller_1.adminController)));
+router.put('/:id', rbac_1.superAdminOnly, (0, validation_1.validate)({ params: validator_1.idParam, body: admin_types_1.updateAdminSchema }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.update.bind(admin_controller_1.adminController)));
+router.delete('/:id', rbac_1.superAdminOnly, (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.deactivate.bind(admin_controller_1.adminController)));
+router.post('/:id/enable', rbac_1.superAdminOnly, (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.enable.bind(admin_controller_1.adminController)));
+router.post('/:id/reset-password', rbac_1.superAdminOnly, (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(admin_controller_1.adminController.resetPassword.bind(admin_controller_1.adminController)));
+exports.default = router;
+//# sourceMappingURL=admin.routes.js.map

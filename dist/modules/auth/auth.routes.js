@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_controller_1 = require("./auth.controller");
+const auth_1 = require("../../middleware/auth");
+const rbac_1 = require("../../middleware/rbac");
+const validation_1 = require("../../middleware/validation");
+const rate_limit_1 = require("../../middleware/rate-limit");
+const api_error_1 = require("../../utils/api-error");
+const auth_types_1 = require("./auth.types");
+const router = (0, express_1.Router)();
+router.post('/login', (0, rate_limit_1.rateLimit)({ max: 10, windowSec: 60, keyPrefix: 'login' }), (0, validation_1.validate)({ body: auth_types_1.loginSchema }), (0, api_error_1.asyncHandler)(auth_controller_1.authController.login.bind(auth_controller_1.authController)));
+router.post('/refresh', (0, api_error_1.asyncHandler)(auth_controller_1.authController.refresh.bind(auth_controller_1.authController)));
+router.post('/logout', (0, api_error_1.asyncHandler)(auth_controller_1.authController.logout.bind(auth_controller_1.authController)));
+router.use(auth_1.authenticate);
+router.get('/me', (0, api_error_1.asyncHandler)(auth_controller_1.authController.me.bind(auth_controller_1.authController)));
+router.post('/change-password', (0, validation_1.validate)({ body: auth_types_1.changePasswordSchema }), (0, api_error_1.asyncHandler)(auth_controller_1.authController.changePassword.bind(auth_controller_1.authController)));
+router.put('/profile', (0, api_error_1.asyncHandler)(auth_controller_1.authController.updateProfile.bind(auth_controller_1.authController)));
+router.post('/reset-password', rbac_1.superAdminOnly, (0, validation_1.validate)({ body: auth_types_1.resetPasswordSchema }), (0, api_error_1.asyncHandler)(auth_controller_1.authController.resetPassword.bind(auth_controller_1.authController)));
+exports.default = router;
+//# sourceMappingURL=auth.routes.js.map

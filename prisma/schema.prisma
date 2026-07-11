@@ -1,0 +1,802 @@
+// ============================================================
+// BLESSING HOPE SCHOOL FEE MANAGEMENT SYSTEM
+// Version 2.0 - Production-Ready Database (corrected)
+//
+// Notes on deviations from the raw v2.0 spec (all intentional):
+//  * User.passwordEncrypted REMOVED - reversible password storage is a
+//    security anti-pattern. Super Admin can RESET, never VIEW passwords.
+//  * Parent login / OtpCode REMOVED - guardians receive SMS only, no auth.
+//  * Generated columns (Invoice.balance/totalDue, Payment.amountRemaining)
+//    are NOT Prisma-native (@generated syntax is invalid). They are plain
+//    columns kept correct by BEFORE triggers (see migration SQL). App code
+//    must treat them as READ-ONLY.
+//  * Receipt/Invoice/Transaction numbering uses a NumberSequence table +
+//    atomic SQL function (per-school, race-safe) instead of dynamic
+//    per-school sequences.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 1. USERS (SUPER_ADMIN / ADMIN only)
+// ============================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  fullName          String
+  phone             String
+  role              UserRole
+  schoolId          String?
+  school            School?   @relation(fields: [schoolId], references: [id])
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  refreshTokens       RefreshToken[]
+  auditLogs           AuditLog[]
+  createdStudents     Student[]           @relation("StudentCreator")
+  recordedPayments    Payment[]           @relation("PaymentCreator")
+  verifiedPayments    Payment[]           @relation("PaymentVerifier")
+  createdReceipts     Receipt[]           @relation("ReceiptCreator")
+  approvedAdjustments InvoiceAdjustment[] @relation("AdjustmentApprover")
+
+  @@index([email])
+  @@index([schoolId])
+  @@index([role])
+}
+
+// ============================================================
+// 2. MULTI-TENANT SCHOOLS
+// ============================================================
+
+model School {
+  id        String  @id @default(cuid())
+  name      String
+  subdomain String  @unique
+  phone     String
+  email     String?
+  address   String?
+  logoUrl   String?
+
+  bankName        String @default("CRDB")
+  bankAccount     String
+  bankAccountName String
+
+  lateFeeAmount     Decimal  @default(2000) @db.Decimal(10, 2)
+  lateFeeGraceDays  Int      @default(5)
+  academicYearStart DateTime
+  academicYearEnd   DateTime
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admins           User[]
+  students         Student[]
+  classes          Class[]
+  feePackages      FeePackage[]
+  parents          Guardian[]
+  academicYears    AcademicYear[]
+  invoices         Invoice[]
+  payments         Payment[]
+  receipts         Receipt[]
+  transactions     Transaction[]
+  auditLogs        AuditLog[]
+  notificationLogs NotificationLog[]
+  systemConfigs    SystemConfig[]
+  backupRecords    BackupRecord[]
+  numberSequences  NumberSequence[]
+
+  @@index([subdomain])
+  @@index([isActive])
+}
+
+// ============================================================
+// 3. ACADEMIC YEAR & CLASSES
+// ============================================================
+
+enum ClassLevel {
+  PRE_PRIMARY
+  PRIMARY
+  SECONDARY
+}
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  year      Int
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  students    Student[]
+  invoices    Invoice[]
+  enrollments StudentFeeEnrollment[]
+
+  @@unique([schoolId, year])
+  @@index([schoolId, isCurrent])
+}
+
+model Class {
+  id          String     @id @default(cuid())
+  schoolId    String
+  school      School     @relation(fields: [schoolId], references: [id])
+  name        String
+  level       ClassLevel
+  description String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  students          Student[]
+  feePackageClasses FeePackageClass[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, isActive])
+}
+
+// ============================================================
+// 4. FEE PACKAGES
+// ============================================================
+
+enum InstallmentType {
+  MONTHLY
+  QUARTERLY
+  TERMLY
+}
+
+model FeePackage {
+  id          String  @id @default(cuid())
+  schoolId    String
+  school      School  @relation(fields: [schoolId], references: [id])
+  name        String
+  description String?
+
+  annualFee         Decimal         @db.Decimal(12, 2)
+  installmentType   InstallmentType
+  installmentCount  Int
+  installmentAmount Decimal         @db.Decimal(12, 2)
+
+  hostelAvailable   Boolean  @default(false)
+  hostelAnnualFee   Decimal? @db.Decimal(12, 2)
+  hostelInstallment Decimal? @db.Decimal(12, 2)
+
+  siblingDiscountEnabled      Boolean  @default(false)
+  siblingDiscountPercentage   Decimal? @db.Decimal(5, 2)
+  siblingDiscountAppliesAfter Int      @default(2)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classes     FeePackageClass[]
+  enrollments StudentFeeEnrollment[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, isActive])
+}
+
+model FeePackageClass {
+  id           String     @id @default(cuid())
+  feePackageId String
+  feePackage   FeePackage @relation(fields: [feePackageId], references: [id], onDelete: Cascade)
+  classId      String
+  class        Class      @relation(fields: [classId], references: [id])
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+
+  @@unique([feePackageId, classId])
+}
+
+// ============================================================
+// 5. GUARDIANS (NO LOGIN - SMS recipients only)
+// ============================================================
+
+enum RelationshipType {
+  FATHER
+  MOTHER
+  GUARDIAN
+  UNCLE
+  AUNT
+  SISTER
+  BROTHER
+  OTHER
+}
+
+model Guardian {
+  id            String           @id @default(cuid())
+  schoolId      String
+  school        School           @relation(fields: [schoolId], references: [id])
+  fullName      String
+  phone         String
+  email         String?
+  address       String?
+  relationship  RelationshipType
+  receivesSms   Boolean          @default(true)
+  receivesEmail Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  students         StudentGuardian[]
+  notificationLogs NotificationLog[]
+
+  @@unique([schoolId, phone])
+  @@index([schoolId, phone])
+}
+
+// ============================================================
+// 6. STUDENTS
+// ============================================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum StudentStatus {
+  ACTIVE
+  WITHDRAWN
+  GRADUATED
+  TRANSFERRED
+  SUSPENDED
+}
+
+model Student {
+  id             String       @id @default(cuid())
+  schoolId       String
+  school         School       @relation(fields: [schoolId], references: [id])
+  admissionNo    String       @unique
+  fullName       String
+  dateOfBirth    DateTime?
+  gender         Gender?
+  classId        String
+  class          Class        @relation(fields: [classId], references: [id])
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  status           StudentStatus @default(ACTIVE)
+  enrollmentDate   DateTime      @default(now())
+  withdrawalDate   DateTime?
+  withdrawalReason String?
+
+  createdBy     String
+  createdByUser User     @relation("StudentCreator", fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  guardians        StudentGuardian[]
+  enrollments      StudentFeeEnrollment[]
+  invoices         Invoice[]
+  payments         Payment[]
+  receipts         Receipt[]
+  transactions     Transaction[]
+  notificationLogs NotificationLog[]
+
+  @@unique([schoolId, admissionNo])
+  @@index([schoolId, status])
+  @@index([schoolId, classId])
+  @@index([admissionNo])
+  @@index([fullName])
+}
+
+model StudentGuardian {
+  id                 String   @id @default(cuid())
+  studentId          String
+  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardianId         String
+  guardian           Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  isPrimaryContact   Boolean  @default(false)
+  isEmergencyContact Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  @@unique([studentId, guardianId])
+  @@index([studentId])
+  @@index([guardianId])
+}
+
+model StudentFeeEnrollment {
+  id             String       @id @default(cuid())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feePackageId   String
+  feePackage     FeePackage   @relation(fields: [feePackageId], references: [id])
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  isHostel       Boolean      @default(false)
+  isActive       Boolean      @default(true)
+  enrolledAt     DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([studentId, academicYearId])
+  @@index([studentId, isActive])
+  @@index([feePackageId])
+}
+
+// ============================================================
+// 7. INVOICES
+// ============================================================
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  VOID
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  invoiceNumber  String       @unique
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  schoolId       String
+  school         School       @relation(fields: [schoolId], references: [id])
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  amount     Decimal @db.Decimal(12, 2)
+  amountPaid Decimal @default(0) @db.Decimal(12, 2)
+  /// DB-maintained (trigger): amount - amountPaid. READ-ONLY.
+  balance    Decimal @default(0) @db.Decimal(12, 2)
+  lateFee    Decimal @default(0) @db.Decimal(10, 2)
+  /// DB-maintained (trigger): amount + lateFee. READ-ONLY.
+  totalDue   Decimal @default(0) @db.Decimal(12, 2)
+
+  invoiceDate      DateTime  @default(now())
+  dueDate          DateTime
+  lateFeeAppliedAt DateTime?
+
+  status InvoiceStatus @default(UNPAID)
+  notes  String?
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments    Payment[]
+  adjustments InvoiceAdjustment[]
+
+  @@unique([studentId, invoiceNumber])
+  @@index([studentId, status])
+  @@index([schoolId, status])
+  @@index([dueDate, status])
+  @@index([academicYearId])
+}
+
+enum AdjustmentType {
+  CREDIT_NOTE
+  DEBIT_NOTE
+  DISCOUNT
+  WAIVER
+}
+
+model InvoiceAdjustment {
+  id             String         @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type           AdjustmentType
+  amount         Decimal        @db.Decimal(12, 2)
+  reason         String
+  approvedBy     String
+  approvedByUser User           @relation("AdjustmentApprover", fields: [approvedBy], references: [id])
+  createdAt      DateTime       @default(now())
+
+  @@index([invoiceId])
+}
+
+// ============================================================
+// 8. PAYMENTS
+// ============================================================
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  M_PESA
+  TIGO_PESA
+  AIRTEL_MONEY
+  SELCOM
+  CHEQUE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  VOID
+}
+
+model Payment {
+  id            String  @id @default(cuid())
+  receiptNumber String  @unique
+  studentId     String
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  invoiceId     String
+  invoice       Invoice @relation(fields: [invoiceId], references: [id])
+  schoolId      String
+  school        School  @relation(fields: [schoolId], references: [id])
+
+  amount          Decimal @db.Decimal(12, 2)
+  amountAllocated Decimal @db.Decimal(12, 2)
+  /// DB-maintained (trigger): amount - amountAllocated. READ-ONLY.
+  amountRemaining Decimal @default(0) @db.Decimal(12, 2)
+
+  method        PaymentMethod
+  bankReference String?
+  transactionId String?
+  paymentDate   DateTime      @default(now())
+  receiptPhoto  String?
+
+  verifiedBy        String?
+  verifiedByUser    User?     @relation("PaymentVerifier", fields: [verifiedBy], references: [id])
+  verifiedAt        DateTime?
+  verificationNotes String?
+
+  status PaymentStatus @default(PENDING)
+
+  recordedBy     String
+  recordedByUser User     @relation("PaymentCreator", fields: [recordedBy], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  receipts     Receipt[]
+  transactions Transaction[]
+
+  @@unique([schoolId, receiptNumber])
+  @@index([studentId, status])
+  @@index([invoiceId])
+  @@index([schoolId, paymentDate])
+  @@index([bankReference])
+  @@index([status])
+}
+
+// ============================================================
+// 9. RECEIPTS
+// ============================================================
+
+model Receipt {
+  id            String  @id @default(cuid())
+  receiptNumber String  @unique
+  paymentId     String
+  payment       Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  schoolId      String
+  school        School  @relation(fields: [schoolId], references: [id])
+
+  amount        Decimal @db.Decimal(12, 2)
+  amountInWords String?
+
+  receiptDate DateTime @default(now())
+  receiptData Json
+  pdfUrl      String?
+
+  isPrinted   Boolean   @default(false)
+  isEmailSent Boolean   @default(false)
+  printedAt   DateTime?
+  emailedAt   DateTime?
+
+  createdBy     String
+  createdByUser User     @relation("ReceiptCreator", fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([schoolId, receiptNumber])
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([paymentId])
+}
+
+// ============================================================
+// 10. ONLINE PAYMENTS (GATEWAY)
+// ============================================================
+
+enum PaymentGateway {
+  SELCOM
+  CRDB_API
+  M_PESA_API
+  TIGO_PESA_API
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  transactionRef String   @unique
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  paymentId      String?
+  payment        Payment? @relation(fields: [paymentId], references: [id])
+  schoolId       String
+  school         School   @relation(fields: [schoolId], references: [id])
+
+  gateway     PaymentGateway @default(SELCOM)
+  providerRef String         @unique
+  amount      Decimal        @db.Decimal(12, 2)
+  currency    String         @default("TZS")
+
+  status          TransactionStatus @default(PENDING)
+  responseCode    String?
+  responseMessage String?
+
+  requestPayload  Json?
+  responsePayload Json?
+  webhookPayload  Json?
+
+  initiatedAt       DateTime  @default(now())
+  completedAt       DateTime?
+  webhookReceivedAt DateTime?
+
+  retryCount  Int       @default(0)
+  lastRetryAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs TransactionLog[]
+
+  @@index([studentId, status])
+  @@index([providerRef])
+  @@index([gateway, status])
+  @@index([createdAt])
+}
+
+model TransactionLog {
+  id            String            @id @default(cuid())
+  transactionId String
+  transaction   Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  action        String
+  status        TransactionStatus
+  payload       Json?
+  error         String?
+  createdAt     DateTime          @default(now())
+
+  @@index([transactionId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// 11. COMMUNICATION
+// ============================================================
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model NotificationLog {
+  id         String    @id @default(cuid())
+  schoolId   String
+  school     School    @relation(fields: [schoolId], references: [id])
+  studentId  String?
+  student    Student?  @relation(fields: [studentId], references: [id])
+  guardianId String?
+  guardian   Guardian? @relation(fields: [guardianId], references: [id])
+
+  channel   NotificationChannel
+  recipient String
+  subject   String?
+  message   String
+  senderId  String?
+
+  status         NotificationStatus @default(PENDING)
+  providerRef    String?
+  deliveryStatus String?
+
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
+  failedAt    DateTime?
+  error       String?
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, sentAt])
+  @@index([guardianId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// ============================================================
+// 12. AUDIT & SECURITY
+// ============================================================
+
+enum AuditAction {
+  USER_LOGIN
+  USER_LOGOUT
+  USER_CREATED
+  USER_UPDATED
+  USER_DEACTIVATED
+  PASSWORD_CHANGED
+  PASSWORD_RESET
+  STUDENT_CREATED
+  STUDENT_UPDATED
+  STUDENT_WITHDRAWN
+  STUDENT_TRANSFERRED
+  FEE_PACKAGE_CREATED
+  FEE_PACKAGE_UPDATED
+  INVOICE_GENERATED
+  INVOICE_ADJUSTED
+  INVOICE_CANCELLED
+  PAYMENT_RECORDED
+  PAYMENT_VERIFIED
+  PAYMENT_REFUNDED
+  PAYMENT_VOIDED
+  RECEIPT_GENERATED
+  RECEIPT_PRINTED
+  TRANSACTION_INITIATED
+  TRANSACTION_COMPLETED
+  TRANSACTION_FAILED
+  SYSTEM_CONFIG_UPDATED
+  BACKUP_CREATED
+  BACKUP_RESTORED
+}
+
+model AuditLog {
+  id       String  @id @default(cuid())
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+  userId   String
+  user     User    @relation(fields: [userId], references: [id])
+
+  action        AuditAction
+  tableName     String
+  recordId      String
+  actionDetails Json?
+
+  oldValues Json?
+  newValues Json?
+
+  ipAddress String?
+  userAgent String?
+  requestId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([tableName, recordId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  key         String
+  value       Json
+  description String?
+  isEncrypted Boolean  @default(false)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([schoolId, key])
+}
+
+// ============================================================
+// 13. BACKUP & MAINTENANCE
+// ============================================================
+
+enum BackupType {
+  FULL
+  DIFFERENTIAL
+  WAL
+  SCHEMA_ONLY
+  DATA_ONLY
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RESTORED
+}
+
+model BackupRecord {
+  id         String     @id @default(cuid())
+  schoolId   String?
+  school     School?    @relation(fields: [schoolId], references: [id])
+  backupType BackupType
+  fileName   String
+  fileSize   Int
+  filePath   String
+  checksum   String?
+
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  status      BackupStatus @default(IN_PROGRESS)
+  error       String?
+
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([status])
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  isEnabled   Boolean  @default(false)
+  percentage  Int?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================================
+// 15. DOCUMENT NUMBERING (race-safe, per-school, per-year)
+//     Used by the next_document_number() SQL function.
+// ============================================================
+
+model NumberSequence {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  scope     String // 'RECEIPT' | 'INVOICE' | 'TRANSACTION'
+  year      Int
+  lastValue BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, scope, year])
+}

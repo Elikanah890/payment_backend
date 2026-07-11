@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const payment_controller_1 = require("./payment.controller");
+const auth_1 = require("../../middleware/auth");
+const validation_1 = require("../../middleware/validation");
+const api_error_1 = require("../../utils/api-error");
+const validator_1 = require("../../utils/validator");
+const payment_types_1 = require("./payment.types");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.post('/record', (0, validation_1.validate)({ body: payment_types_1.recordPaymentSchema }), (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.record.bind(payment_controller_1.paymentController)));
+router.get('/', (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.list.bind(payment_controller_1.paymentController)));
+router.get('/summary', (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.summary.bind(payment_controller_1.paymentController)));
+router.get('/student/:studentId', (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.studentPayments.bind(payment_controller_1.paymentController)));
+router.get('/:id', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.get.bind(payment_controller_1.paymentController)));
+router.put('/:id/verify', (0, validation_1.validate)({ params: validator_1.idParam, body: payment_types_1.verifyPaymentSchema }), (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.verify.bind(payment_controller_1.paymentController)));
+router.put('/:id/void', (0, validation_1.validate)({ params: validator_1.idParam, body: payment_types_1.voidPaymentSchema }), (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.void.bind(payment_controller_1.paymentController)));
+router.put('/:id/refund', (0, validation_1.validate)({ params: validator_1.idParam, body: payment_types_1.refundPaymentSchema }), (0, api_error_1.asyncHandler)(payment_controller_1.paymentController.refund.bind(payment_controller_1.paymentController)));
+exports.default = router;
+//# sourceMappingURL=payment.routes.js.map

@@ -1,0 +1,22 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const invoice_controller_1 = require("./invoice.controller");
+const auth_1 = require("../../middleware/auth");
+const validation_1 = require("../../middleware/validation");
+const api_error_1 = require("../../utils/api-error");
+const validator_1 = require("../../utils/validator");
+const invoice_types_1 = require("./invoice.types");
+const router = (0, express_1.Router)();
+router.use(auth_1.authenticate);
+router.post('/generate', (0, validation_1.validate)({ body: invoice_types_1.generateInvoiceSchema }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.generate.bind(invoice_controller_1.invoiceController)));
+router.get('/', (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.list.bind(invoice_controller_1.invoiceController)));
+router.get('/overdue', (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.overdue.bind(invoice_controller_1.invoiceController)));
+router.get('/summary', (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.summary.bind(invoice_controller_1.invoiceController)));
+router.get('/:id', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.get.bind(invoice_controller_1.invoiceController)));
+router.put('/:id/adjust', (0, validation_1.validate)({ params: validator_1.idParam, body: invoice_types_1.adjustInvoiceSchema }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.adjust.bind(invoice_controller_1.invoiceController)));
+router.post('/:id/waive', (0, validation_1.validate)({ params: validator_1.idParam, body: invoice_types_1.waiveInvoiceSchema }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.waive.bind(invoice_controller_1.invoiceController)));
+router.get('/:id/print', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.print.bind(invoice_controller_1.invoiceController)));
+router.get('/:id/download', (0, validation_1.validate)({ params: validator_1.idParam }), (0, api_error_1.asyncHandler)(invoice_controller_1.invoiceController.download.bind(invoice_controller_1.invoiceController)));
+exports.default = router;
+//# sourceMappingURL=invoice.routes.js.map
