@@ -31,7 +31,7 @@ exports.config = {
         url: req('DATABASE_URL', 'postgresql://blessing_admin:Postgress321@localhost:5432/blessing_hope_db'),
     },
     redis: {
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        url: process.env.REDIS_URL || '',
     },
     jwt: {
         accessSecret: req('JWT_ACCESS_SECRET', 'dev_access_secret_change_me_please_32chars'),
