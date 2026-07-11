@@ -20,7 +20,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@blessinghope.co.tz',
-      passwordHash: await bcrypt.hash('BhAdmin!2026$ecure', 12),
+      passwordHash: await bcrypt.hash('Admin@123', 12),
       fullName: 'System Super Admin',
       phone: '+255700000000',
       role: 'SUPER_ADMIN',
@@ -51,7 +51,7 @@ async function main() {
     update: {},
     create: {
       email: 'bursar@blessinghope.co.tz',
-      passwordHash: await bcrypt.hash('Bursar!Bh2026$afe', 12),
+      passwordHash: await bcrypt.hash('Admin@123', 12),
       fullName: 'School Bursar',
       phone: '+255712000001',
       role: 'ADMIN',
@@ -346,8 +346,8 @@ async function main() {
 
   console.log('\n=== SEED COMPLETE ===');
   console.log(`Students: ${students} | Invoices: ${invoices} | Payments: ${payments}`);
-  console.log('Super Admin: admin@blessinghope.co.tz / BhAdmin!2026$ecure');
-  console.log('School Admin: bursar@blessinghope.co.tz / Bursar!Bh2026$afe');
+  console.log('Super Admin: admin@blessinghope.co.tz / Admin@123');
+  console.log('School Admin: bursar@blessinghope.co.tz / Admin@123');
   console.log('NOTE: change these passwords on first login.');
 }
 
