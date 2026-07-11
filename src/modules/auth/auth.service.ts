@@ -56,21 +56,40 @@ export class AuthService {
   }
 
   async login(email: string, password: string, ctx: Ctx) {
-    await this.assertNotLocked(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    await this.assertNotLocked(normalizedEmail);
 
-    const user = await prisma.user.findUnique({ where: { email }, include: { school: true } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail }, include: { school: true } });
+
+    logger.info('Login attempt', { email: normalizedEmail, userFound: !!user, isActive: user?.isActive });
+
     if (!user || !user.isActive) {
-      await this.registerFailure(email);
+      logger.warn('Login failed: user not found or inactive', { email: normalizedEmail });
+      await this.registerFailure(normalizedEmail);
       throw ApiError.unauthorized('Invalid credentials');
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    logger.info('Comparing password', {
+      email: normalizedEmail,
+      passwordLength: password.length,
+      hashLength: user.passwordHash.length,
+      hashPrefix: user.passwordHash.substring(0, 7),
+    });
+
+    let valid = false;
+    try {
+      valid = await bcrypt.compare(password, user.passwordHash);
+    } catch (err: any) {
+      logger.error('bcrypt.compare error', { email: normalizedEmail, error: err.message });
+    }
+
     if (!valid) {
-      await this.registerFailure(email);
+      logger.warn('Login failed: password mismatch', { email: normalizedEmail });
+      await this.registerFailure(normalizedEmail);
       throw ApiError.unauthorized('Invalid credentials');
     }
 
-    await this.clearFailures(email);
+    await this.clearFailures(normalizedEmail);
     const tokens = await this.issueTokens(toAuthUser(user), ctx);
     await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
 

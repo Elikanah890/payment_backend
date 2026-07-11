@@ -56,18 +56,34 @@ class AuthService {
         }
     }
     async login(email, password, ctx) {
-        await this.assertNotLocked(email);
-        const user = await database_1.prisma.user.findUnique({ where: { email }, include: { school: true } });
+        const normalizedEmail = email.toLowerCase().trim();
+        await this.assertNotLocked(normalizedEmail);
+        const user = await database_1.prisma.user.findUnique({ where: { email: normalizedEmail }, include: { school: true } });
+        logger_1.logger.info('Login attempt', { email: normalizedEmail, userFound: !!user, isActive: user?.isActive });
         if (!user || !user.isActive) {
-            await this.registerFailure(email);
+            logger_1.logger.warn('Login failed: user not found or inactive', { email: normalizedEmail });
+            await this.registerFailure(normalizedEmail);
             throw api_error_1.ApiError.unauthorized('Invalid credentials');
         }
-        const valid = await bcrypt_1.default.compare(password, user.passwordHash);
+        logger_1.logger.info('Comparing password', {
+            email: normalizedEmail,
+            passwordLength: password.length,
+            hashLength: user.passwordHash.length,
+            hashPrefix: user.passwordHash.substring(0, 7),
+        });
+        let valid = false;
+        try {
+            valid = await bcrypt_1.default.compare(password, user.passwordHash);
+        }
+        catch (err) {
+            logger_1.logger.error('bcrypt.compare error', { email: normalizedEmail, error: err.message });
+        }
         if (!valid) {
-            await this.registerFailure(email);
+            logger_1.logger.warn('Login failed: password mismatch', { email: normalizedEmail });
+            await this.registerFailure(normalizedEmail);
             throw api_error_1.ApiError.unauthorized('Invalid credentials');
         }
-        await this.clearFailures(email);
+        await this.clearFailures(normalizedEmail);
         const tokens = await this.issueTokens(toAuthUser(user), ctx);
         await database_1.prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
         await (0, audit_1.recordAudit)({
