@@ -30,6 +30,10 @@ async function process(name: string): Promise<unknown> {
 }
 
 export async function startJobs(): Promise<void> {
+  if (!bullConnection) {
+    logger.info('Redis not configured — skipping background jobs');
+    return;
+  }
   try {
     queue = new Queue(JOB_QUEUE, { connection: bullConnection });
     worker = new Worker(JOB_QUEUE, async (job) => process(job.name), { connection: bullConnection });

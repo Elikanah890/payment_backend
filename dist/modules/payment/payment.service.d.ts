@@ -8,11 +8,11 @@ export declare class PaymentService {
     record(user: AuthUser, dto: RecordPaymentDto): Promise<{
         count: number;
         payments: {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;
@@ -31,11 +31,11 @@ export declare class PaymentService {
         }[];
     }>;
     settleForStudent(actorId: string, studentId: string, amount: number | Prisma.Decimal, method: PaymentMethod, reference: string): Promise<{
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;
@@ -68,11 +68,11 @@ export declare class PaymentService {
                 invoiceNumber: string;
             };
         } & {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;
@@ -110,6 +110,7 @@ export declare class PaymentService {
                 sortOrder: number;
             };
         } & {
+            status: import(".prisma/client").$Enums.StudentStatus;
             id: string;
             fullName: string;
             schoolId: string;
@@ -120,7 +121,6 @@ export declare class PaymentService {
             gender: import(".prisma/client").$Enums.Gender | null;
             classId: string;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.StudentStatus;
             enrollmentDate: Date;
             withdrawalDate: Date | null;
             withdrawalReason: string | null;
@@ -146,12 +146,12 @@ export declare class PaymentService {
             emailedAt: Date | null;
         }[];
         invoice: {
+            status: import(".prisma/client").$Enums.InvoiceStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
             createdBy: string | null;
             studentId: string;
             amount: Prisma.Decimal;
@@ -169,11 +169,11 @@ export declare class PaymentService {
             fullName: string;
         };
     } & {
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;
@@ -214,11 +214,11 @@ export declare class PaymentService {
             invoiceNumber: string;
         };
     } & {
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;
@@ -236,11 +236,11 @@ export declare class PaymentService {
         recordedBy: string;
     })[]>;
     verify(user: AuthUser, id: string, notes?: string): Promise<{
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;
@@ -258,11 +258,11 @@ export declare class PaymentService {
         recordedBy: string;
     }>;
     void(user: AuthUser, id: string, reason: string): Promise<{
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;
@@ -280,11 +280,11 @@ export declare class PaymentService {
         recordedBy: string;
     }>;
     refund(user: AuthUser, id: string, reason: string): Promise<{
+        status: import(".prisma/client").$Enums.PaymentStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.PaymentStatus;
         receiptNumber: string;
         studentId: string;
         invoiceId: string;

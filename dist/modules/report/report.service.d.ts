@@ -14,11 +14,11 @@ export declare class ReportService {
                 receiptNumber: string;
             }[];
         } & {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;
@@ -76,12 +76,12 @@ export declare class ReportService {
             balance: Prisma.Decimal;
         };
         invoices: {
+            status: import(".prisma/client").$Enums.InvoiceStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
             createdBy: string | null;
             studentId: string;
             amount: Prisma.Decimal;
@@ -100,11 +100,11 @@ export declare class ReportService {
                 receiptNumber: string;
             }[];
         } & {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;

@@ -1,6 +1,6 @@
 import { Prisma, AuditAction, BackupStatus, BackupType, UserRole } from '@prisma/client';
 import { prisma } from '../../config/database';
-import { redis } from '../../config/redis';
+import { redisPing } from '../../config/redis';
 import { config } from '../../config/env';
 import { ApiError } from '../../utils/api-error';
 import { resolveSchoolScope } from '../../middleware/rbac';
@@ -65,7 +65,7 @@ export class SystemService {
     }
 
     try {
-      await redis.ping();
+      await redisPing();
       results.redis = { ok: true, message: 'Connected' };
     } catch (e: any) {
       results.redis = { ok: false, message: e.message };

@@ -82,11 +82,11 @@ class TransactionService {
     async processWebhook(providerRef, payload) {
         const idempotencyKey = `webhook:${providerRef}`;
         try {
-            if (await redis_1.redis.get(idempotencyKey)) {
+            if (await (0, redis_1.redisGet)(idempotencyKey)) {
                 const tx = await database_1.prisma.transaction.findUnique({ where: { providerRef }, select: { id: true, status: true, paymentId: true } });
                 return { alreadyProcessed: true, transactionId: tx?.id };
             }
-            await redis_1.redis.set(idempotencyKey, '1', 'EX', 86400);
+            await (0, redis_1.redisSet)(idempotencyKey, '1', 'EX', 86400);
         }
         catch {
             /* fail-open if Redis down */

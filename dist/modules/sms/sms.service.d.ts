@@ -20,13 +20,13 @@ export declare class SmsService {
     }>;
     history(user: AuthUser, page: number, limit: number, requestedSchoolId?: string): Promise<{
         data: {
+            status: import(".prisma/client").$Enums.NotificationStatus;
             message: string;
             error: string | null;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.NotificationStatus;
             createdBy: string | null;
             studentId: string | null;
             providerRef: string | null;

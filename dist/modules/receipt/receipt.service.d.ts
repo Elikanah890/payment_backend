@@ -38,6 +38,7 @@ export declare class ReceiptService {
                     sortOrder: number;
                 };
             } & {
+                status: import(".prisma/client").$Enums.StudentStatus;
                 id: string;
                 fullName: string;
                 schoolId: string;
@@ -48,7 +49,6 @@ export declare class ReceiptService {
                 gender: import(".prisma/client").$Enums.Gender | null;
                 classId: string;
                 academicYearId: string;
-                status: import(".prisma/client").$Enums.StudentStatus;
                 enrollmentDate: Date;
                 withdrawalDate: Date | null;
                 withdrawalReason: string | null;
@@ -63,11 +63,11 @@ export declare class ReceiptService {
                 fullName: string;
             };
         } & {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;

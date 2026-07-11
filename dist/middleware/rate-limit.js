@@ -11,10 +11,10 @@ function rateLimit(opts) {
         const id = req.user?.id || req.ip || 'anon';
         const key = `${prefix}:${id}:${Math.floor(Date.now() / (windowSec * 1000))}`;
         try {
-            const count = await redis_1.redis.incr(key);
+            const count = await (0, redis_1.redisIncr)(key);
             if (count === 1)
-                await redis_1.redis.expire(key, windowSec);
-            if (count > max) {
+                await (0, redis_1.redisExpire)(key, windowSec);
+            if (count !== null && count > max) {
                 res.status(429).json({ success: false, message: 'Too many requests' });
                 return;
             }

@@ -79,6 +79,7 @@ export declare class StudentService {
             isEmergencyContact: boolean;
         })[];
     } & {
+        status: import(".prisma/client").$Enums.StudentStatus;
         id: string;
         fullName: string;
         schoolId: string;
@@ -89,7 +90,6 @@ export declare class StudentService {
         gender: import(".prisma/client").$Enums.Gender | null;
         classId: string;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.StudentStatus;
         enrollmentDate: Date;
         withdrawalDate: Date | null;
         withdrawalReason: string | null;
@@ -131,6 +131,7 @@ export declare class StudentService {
                 isEmergencyContact: boolean;
             })[];
         } & {
+            status: import(".prisma/client").$Enums.StudentStatus;
             id: string;
             fullName: string;
             schoolId: string;
@@ -141,7 +142,6 @@ export declare class StudentService {
             gender: import(".prisma/client").$Enums.Gender | null;
             classId: string;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.StudentStatus;
             enrollmentDate: Date;
             withdrawalDate: Date | null;
             withdrawalReason: string | null;
@@ -231,6 +231,7 @@ export declare class StudentService {
             isEmergencyContact: boolean;
         })[];
     } & {
+        status: import(".prisma/client").$Enums.StudentStatus;
         id: string;
         fullName: string;
         schoolId: string;
@@ -241,7 +242,6 @@ export declare class StudentService {
         gender: import(".prisma/client").$Enums.Gender | null;
         classId: string;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.StudentStatus;
         enrollmentDate: Date;
         withdrawalDate: Date | null;
         withdrawalReason: string | null;
@@ -329,6 +329,7 @@ export declare class StudentService {
             isEmergencyContact: boolean;
         })[];
     } & {
+        status: import(".prisma/client").$Enums.StudentStatus;
         id: string;
         fullName: string;
         schoolId: string;
@@ -339,13 +340,13 @@ export declare class StudentService {
         gender: import(".prisma/client").$Enums.Gender | null;
         classId: string;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.StudentStatus;
         enrollmentDate: Date;
         withdrawalDate: Date | null;
         withdrawalReason: string | null;
         createdBy: string;
     }>;
     withdraw(user: AuthUser, id: string, dto: WithdrawDto): Promise<{
+        status: import(".prisma/client").$Enums.StudentStatus;
         id: string;
         fullName: string;
         schoolId: string;
@@ -356,7 +357,6 @@ export declare class StudentService {
         gender: import(".prisma/client").$Enums.Gender | null;
         classId: string;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.StudentStatus;
         enrollmentDate: Date;
         withdrawalDate: Date | null;
         withdrawalReason: string | null;

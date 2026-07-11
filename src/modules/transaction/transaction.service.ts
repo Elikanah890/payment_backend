@@ -1,6 +1,6 @@
 import { Prisma, PaymentGateway, PaymentMethod, PaymentStatus, TransactionStatus } from '@prisma/client';
 import { prisma } from '../../config/database';
-import { redis } from '../../config/redis';
+import { redisGet, redisSet } from '../../config/redis';
 import { config } from '../../config/env';
 import { ApiError } from '../../utils/api-error';
 import { nextTransactionRef } from '../../utils/number-generator';
@@ -85,11 +85,11 @@ export class TransactionService {
   async processWebhook(providerRef: string, payload: Record<string, unknown>) {
     const idempotencyKey = `webhook:${providerRef}`;
     try {
-      if (await redis.get(idempotencyKey)) {
+      if (await redisGet(idempotencyKey)) {
         const tx = await prisma.transaction.findUnique({ where: { providerRef }, select: { id: true, status: true, paymentId: true } });
         return { alreadyProcessed: true, transactionId: tx?.id };
       }
-      await redis.set(idempotencyKey, '1', 'EX', 86400);
+      await redisSet(idempotencyKey, '1', 'EX', 86400);
     } catch {
       /* fail-open if Redis down */
     }

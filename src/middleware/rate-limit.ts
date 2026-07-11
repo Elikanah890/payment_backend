@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { redis } from '../config/redis';
+import { redisIncr, redisExpire } from '../config/redis';
 import { config } from '../config/env';
 import { ApiResponse } from '../types';
 
@@ -12,9 +12,9 @@ export function rateLimit(opts?: { windowSec?: number; max?: number; keyPrefix?:
     const id = req.user?.id || req.ip || 'anon';
     const key = `${prefix}:${id}:${Math.floor(Date.now() / (windowSec * 1000))}`;
     try {
-      const count = await redis.incr(key);
-      if (count === 1) await redis.expire(key, windowSec);
-      if (count > max) {
+      const count = await redisIncr(key);
+      if (count === 1) await redisExpire(key, windowSec);
+      if (count !== null && count > max) {
         res.status(429).json({ success: false, message: 'Too many requests' });
         return;
       }

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
 import { prisma } from '../../config/database';
-import { redis } from '../../config/redis';
+import { redisGet, redisSet, redisDel, redisIncr, redisExpire } from '../../config/redis';
 import { config } from '../../config/env';
 import { logger } from '../../config/logger';
 import { ApiError } from '../../utils/api-error';
@@ -26,7 +26,7 @@ export class AuthService {
 
   private async assertNotLocked(email: string): Promise<void> {
     try {
-      if (await redis.get(this.lockKey(email))) {
+      if (await redisGet(this.lockKey(email))) {
         throw ApiError.tooMany('Account temporarily locked. Try again later.');
       }
     } catch (e) {
@@ -36,11 +36,11 @@ export class AuthService {
 
   private async registerFailure(email: string): Promise<void> {
     try {
-      const n = await redis.incr(this.failKey(email));
-      if (n === 1) await redis.expire(this.failKey(email), config.security.loginLockMinutes * 60);
-      if (n >= config.security.loginMaxAttempts) {
-        await redis.set(this.lockKey(email), '1', 'EX', config.security.loginLockMinutes * 60);
-        await redis.del(this.failKey(email));
+      const n = await redisIncr(this.failKey(email));
+      if (n === 1) await redisExpire(this.failKey(email), config.security.loginLockMinutes * 60);
+      if (n !== null && n >= config.security.loginMaxAttempts) {
+        await redisSet(this.lockKey(email), '1', 'EX', config.security.loginLockMinutes * 60);
+        await redisDel(this.failKey(email));
       }
     } catch {
       /* fail-open */
@@ -49,7 +49,7 @@ export class AuthService {
 
   private async clearFailures(email: string): Promise<void> {
     try {
-      await redis.del(this.failKey(email), this.lockKey(email));
+      await redisDel(this.failKey(email), this.lockKey(email));
     } catch {
       /* ignore */
     }

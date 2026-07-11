@@ -31,6 +31,10 @@ async function process(name) {
     }
 }
 async function startJobs() {
+    if (!redis_1.bullConnection) {
+        logger_1.logger.info('Redis not configured — skipping background jobs');
+        return;
+    }
     try {
         queue = new bullmq_1.Queue(job_definitions_1.JOB_QUEUE, { connection: redis_1.bullConnection });
         worker = new bullmq_1.Worker(job_definitions_1.JOB_QUEUE, async (job) => process(job.name), { connection: redis_1.bullConnection });

@@ -105,11 +105,11 @@ export declare class SystemService {
         updatedBy: string | null;
     }>;
     createBackup(user: AuthUser): Promise<{
+        status: import(".prisma/client").$Enums.BackupStatus;
         error: string | null;
         id: string;
         schoolId: string | null;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.BackupStatus;
         createdBy: string | null;
         completedAt: Date | null;
         backupType: import(".prisma/client").$Enums.BackupType;
@@ -120,11 +120,11 @@ export declare class SystemService {
         startedAt: Date;
     }>;
     listBackups(): Promise<{
+        status: import(".prisma/client").$Enums.BackupStatus;
         error: string | null;
         id: string;
         schoolId: string | null;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.BackupStatus;
         createdBy: string | null;
         completedAt: Date | null;
         backupType: import(".prisma/client").$Enums.BackupType;

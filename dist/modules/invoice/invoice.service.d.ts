@@ -6,12 +6,12 @@ export declare class InvoiceService {
     generate(user: AuthUser, dto: GenerateInvoiceDto): Promise<{
         generated: number;
         invoices: {
+            status: import(".prisma/client").$Enums.InvoiceStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
             createdBy: string | null;
             studentId: string;
             amount: Prisma.Decimal;
@@ -37,12 +37,12 @@ export declare class InvoiceService {
                 };
             };
         } & {
+            status: import(".prisma/client").$Enums.InvoiceStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
             createdBy: string | null;
             studentId: string;
             amount: Prisma.Decimal;
@@ -99,6 +99,7 @@ export declare class InvoiceService {
                 isEmergencyContact: boolean;
             })[];
         } & {
+            status: import(".prisma/client").$Enums.StudentStatus;
             id: string;
             fullName: string;
             schoolId: string;
@@ -109,18 +110,17 @@ export declare class InvoiceService {
             gender: import(".prisma/client").$Enums.Gender | null;
             classId: string;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.StudentStatus;
             enrollmentDate: Date;
             withdrawalDate: Date | null;
             withdrawalReason: string | null;
             createdBy: string;
         };
         payments: {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;
@@ -147,12 +147,12 @@ export declare class InvoiceService {
             approvedBy: string;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
         createdBy: string | null;
         studentId: string;
         amount: Prisma.Decimal;
@@ -167,12 +167,12 @@ export declare class InvoiceService {
         notes: string | null;
     }>;
     adjust(user: AuthUser, id: string, dto: AdjustInvoiceDto): Promise<{
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
         createdBy: string | null;
         studentId: string;
         amount: Prisma.Decimal;
@@ -187,12 +187,12 @@ export declare class InvoiceService {
         notes: string | null;
     }>;
     waive(user: AuthUser, id: string, dto: WaiveInvoiceDto): Promise<{
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
         createdBy: string | null;
         studentId: string;
         amount: Prisma.Decimal;
@@ -242,6 +242,7 @@ export declare class InvoiceService {
                 isEmergencyContact: boolean;
             })[];
         } & {
+            status: import(".prisma/client").$Enums.StudentStatus;
             id: string;
             fullName: string;
             schoolId: string;
@@ -252,19 +253,18 @@ export declare class InvoiceService {
             gender: import(".prisma/client").$Enums.Gender | null;
             classId: string;
             academicYearId: string;
-            status: import(".prisma/client").$Enums.StudentStatus;
             enrollmentDate: Date;
             withdrawalDate: Date | null;
             withdrawalReason: string | null;
             createdBy: string;
         };
     } & {
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
         academicYearId: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
         createdBy: string | null;
         studentId: string;
         amount: Prisma.Decimal;

@@ -50,7 +50,7 @@ class SystemService {
             results.database = { ok: false, message: e.message };
         }
         try {
-            await redis_1.redis.ping();
+            await (0, redis_1.redisPing)();
             results.redis = { ok: true, message: 'Connected' };
         }
         catch (e) {

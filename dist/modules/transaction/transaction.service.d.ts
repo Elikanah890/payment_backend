@@ -7,11 +7,11 @@ export declare class TransactionService {
         phone: string;
         provider?: 'mpesa' | 'tigo' | 'airtel';
     }): Promise<{
+        status: import(".prisma/client").$Enums.TransactionStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.TransactionStatus;
         studentId: string;
         amount: Prisma.Decimal;
         paymentId: string | null;
@@ -52,11 +52,11 @@ export declare class TransactionService {
                 emailedAt: Date | null;
             }[];
         } & {
+            status: import(".prisma/client").$Enums.PaymentStatus;
             id: string;
             schoolId: string;
             createdAt: Date;
             updatedAt: Date;
-            status: import(".prisma/client").$Enums.PaymentStatus;
             receiptNumber: string;
             studentId: string;
             invoiceId: string;
@@ -74,20 +74,20 @@ export declare class TransactionService {
             recordedBy: string;
         }) | null;
         logs: {
+            status: import(".prisma/client").$Enums.TransactionStatus;
             error: string | null;
             id: string;
             createdAt: Date;
             action: string;
-            status: import(".prisma/client").$Enums.TransactionStatus;
             transactionId: string;
             payload: Prisma.JsonValue | null;
         }[];
     } & {
+        status: import(".prisma/client").$Enums.TransactionStatus;
         id: string;
         schoolId: string;
         createdAt: Date;
         updatedAt: Date;
-        status: import(".prisma/client").$Enums.TransactionStatus;
         studentId: string;
         amount: Prisma.Decimal;
         paymentId: string | null;

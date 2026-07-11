@@ -24,7 +24,7 @@ class AuthService {
     }
     async assertNotLocked(email) {
         try {
-            if (await redis_1.redis.get(this.lockKey(email))) {
+            if (await (0, redis_1.redisGet)(this.lockKey(email))) {
                 throw api_error_1.ApiError.tooMany('Account temporarily locked. Try again later.');
             }
         }
@@ -35,12 +35,12 @@ class AuthService {
     }
     async registerFailure(email) {
         try {
-            const n = await redis_1.redis.incr(this.failKey(email));
+            const n = await (0, redis_1.redisIncr)(this.failKey(email));
             if (n === 1)
-                await redis_1.redis.expire(this.failKey(email), env_1.config.security.loginLockMinutes * 60);
-            if (n >= env_1.config.security.loginMaxAttempts) {
-                await redis_1.redis.set(this.lockKey(email), '1', 'EX', env_1.config.security.loginLockMinutes * 60);
-                await redis_1.redis.del(this.failKey(email));
+                await (0, redis_1.redisExpire)(this.failKey(email), env_1.config.security.loginLockMinutes * 60);
+            if (n !== null && n >= env_1.config.security.loginMaxAttempts) {
+                await (0, redis_1.redisSet)(this.lockKey(email), '1', 'EX', env_1.config.security.loginLockMinutes * 60);
+                await (0, redis_1.redisDel)(this.failKey(email));
             }
         }
         catch {
@@ -49,7 +49,7 @@ class AuthService {
     }
     async clearFailures(email) {
         try {
-            await redis_1.redis.del(this.failKey(email), this.lockKey(email));
+            await (0, redis_1.redisDel)(this.failKey(email), this.lockKey(email));
         }
         catch {
             /* ignore */

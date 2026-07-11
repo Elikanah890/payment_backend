@@ -3,30 +3,37 @@ import { config } from './config/env';
 import { logger } from './config/logger';
 import { connectDatabase, disconnectDatabase } from './config/database';
 import { connectRedis, disconnectRedis } from './config/redis';
-import { startJobs, stopJobs } from './jobs/schedulers/cron-scheduler';
 
 async function start(): Promise<void> {
   await connectDatabase();
   await connectRedis();
-  await startJobs();
+
+  try {
+    const { startJobs, stopJobs } = await import('./jobs/schedulers/cron-scheduler');
+    await startJobs();
+    attachShutdown(stopJobs);
+  } catch (e: any) {
+    logger.warn(`Jobs unavailable (non-fatal): ${e.message}`);
+  }
 
   const server = app.listen(config.port, () => {
     logger.info(`Server running on :${config.port} (${config.nodeEnv})`);
   });
 
-  const shutdown = async (signal: string) => {
-    logger.info(`${signal} received, shutting down`);
-    server.close(async () => {
-      await stopJobs();
-      await disconnectRedis();
-      await disconnectDatabase();
-      process.exit(0);
-    });
-    setTimeout(() => process.exit(1), 30000).unref();
-  };
-
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  async function attachShutdown(stopJobsFn?: () => Promise<void>) {
+    const shutdown = async (signal: string) => {
+      logger.info(`${signal} received, shutting down`);
+      server.close(async () => {
+        try { await stopJobsFn?.(); } catch {}
+        await disconnectRedis();
+        await disconnectDatabase();
+        process.exit(0);
+      });
+      setTimeout(() => process.exit(1), 30000).unref();
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+  }
 }
 
 start().catch((e) => {
